@@ -1,7 +1,7 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from '@reduxjs/toolkit';
 
 export const userSlice = createSlice({
-  name: "user",
+  name: 'user',
   initialState: {
     user: null,
   },
@@ -12,9 +12,8 @@ export const userSlice = createSlice({
     updateUserNotifications: (state, action) => {
       state.user = action.payload;
     },
-
   },
 });
 
-export const { setUser,updateUserNotifications  } = userSlice.actions;
+export const { setUser, updateUserNotifications } = userSlice.actions;
 export default userSlice.reducer;

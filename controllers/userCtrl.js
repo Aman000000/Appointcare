@@ -89,17 +89,19 @@ const applyDoctorController = async (req, res) => {
     const newDoctor = await doctorModel({ ...req.body, status: "pending" });
     await newDoctor.save();
     const adminUser = await userModel.findOne({ isAdmin: true });
-    const notification = adminUser.notification;
-    notification.push({
-      type: "apply-doctor-request",
-      message: `${newDoctor.firstName} ${newDoctor.lastName} Has Applied For A Doctor Account`,
-      data: {
-        doctorId: newDoctor._id,
-        name: newDoctor.firstName + " " + newDoctor.lastName,
-        onClickPath: "/admin/docotrs",
-      },
-    });
-    await userModel.findByIdAndUpdate(adminUser._id, { notification });
+    if (adminUser) {
+      const notification = adminUser.notification || [];
+      notification.push({
+        type: "apply-doctor-request",
+        message: `${newDoctor.firstName} ${newDoctor.lastName} Has Applied For A Doctor Account`,
+        data: {
+          doctorId: newDoctor._id,
+          name: newDoctor.firstName + " " + newDoctor.lastName,
+          onClickPath: "/admin/docotrs",
+        },
+      });
+      await userModel.findByIdAndUpdate(adminUser._id, { notification });
+    }
     res.status(201).send({
       success: true,
       message: "Doctor Account Applied SUccessfully",
@@ -213,6 +215,20 @@ const bookAppointmentController = async(req,res) =>{
     req.body.date = appointmentDate.toISOString();
     req.body.time = appointmentTime.format("HH:mm");
     req.body.status = "pending";
+
+    // Prevent double booking
+    const existingAppointment = await appointmentModel.findOne({
+      doctorId: req.body.doctorId,
+      date: req.body.date,
+      time: req.body.time,
+    });
+    if (existingAppointment) {
+      return res.status(200).send({
+        success: false,
+        message: "Time slot is already booked",
+      });
+    }
+
     const newAppointment = new appointmentModel(req.body)
     await newAppointment.save()
     const user = await userModel.findOne({_id: req.body.doctorInfo.userId})
@@ -272,10 +288,7 @@ const bookingAvailabilityController = async (req, res) => {
     const appointments = await appointmentModel.find({
       doctorId,
       date,
-      time: {
-        $gte: fromTime,
-        $lte: toTime,
-      },
+      time: req.body.time,
     });
 
     if (appointments.length > 0) {

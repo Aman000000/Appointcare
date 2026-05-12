@@ -2,6 +2,7 @@ const express = require("express");
 const colors = require("colors");
 const moragan = require("morgan");
 const dotenv = require("dotenv");
+const path = require("path");
 const connectDB = require("./config/db");
 
 
@@ -23,14 +24,20 @@ app.use("/api/v1/user", require("./routes/userRoutes"));
 app.use("/api/v1/admin", require("./routes/adminRoutes"));
 app.use("/api/v1/doctor", require("./routes/doctorRoutes"));
 
-//static file
+//static file - serve Vite build
+if (process.env.NODE_MODE === "production") {
+  app.use(express.static(path.join(__dirname, "client", "dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "client", "dist", "index.html"));
+  });
+}
 
 //port
 const port = process.env.PORT || 8080;
 //listen port
 app.listen(port, () => {
   console.log(
-    `Server Running in ${process.env.NODE_MODE} Mode on port ${process.env.PORT}`
+    `Server Running in ${process.env.NODE_MODE} Mode on port ${port}`
       .bgCyan.white
   );
 });
